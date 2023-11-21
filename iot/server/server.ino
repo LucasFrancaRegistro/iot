@@ -14,7 +14,7 @@ struct tm timeinfo;
 
 //String serverName = "http://postman-echo.com/Post";
 
-String serverName = "http://192.168.63.41:5000/v0/dados";
+String serverName = "http://127.0.0.1:5000/v0/dados";
 
 void connectWifi() {
   Serial.print("conectando ");
