@@ -3,8 +3,11 @@
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 
+#define PLUV 5
+
 TaskHandle_t taskColeta;
 TaskHandle_t taskMonWiFi;
+//taskHandle_t taskPluv;
 
 SemaphoreHandle_t mutex;
 
@@ -14,6 +17,7 @@ typedef struct {
   float dirvento;
   float velvento;
   float pressao;
+  unsigned long pluv;
 } Medidas_t;
 
 Medidas_t med;
@@ -49,6 +53,14 @@ void tColeta(void *pvParameters)
   }
 }
 
+
+void IRAM_ATTR pluv_handler(){
+  med.pluv = med.pluv +1;
+  Serial.print("Pluv ");
+  Serial.println(med.pluv);
+  delay(300);
+}
+
 void connectWiFi()
 {
   Serial.print("Conectando o WiFI ");
@@ -61,6 +73,12 @@ void connectWiFi()
   Serial.print("Conectado com sucesso, com o IP ");
   Serial.println(WiFi.localIP());
 }
+
+//void tpluv(){
+//  for (;;) {
+//    delay(5);
+//  }
+//}
 
 void tTemInternet(void *pvParameters)
 {
@@ -77,6 +95,8 @@ void setup() {
   uid = WiFi.macAddress();
   uid.replace(":", "");
 
+  pinMode(PLUV, INPUT);
+  attachInterrupt(digitalPinToInterrupt(PLUV), pluv_handler, RISING);
   mutex = xSemaphoreCreateMutex();
   if (mutex == NULL)
     Serial.println("Erro ao criar o mutex");
@@ -106,6 +126,17 @@ void setup() {
     );
 }
 
+//  xTaskCreatePinnedToCore(
+//    tPluv, //funcao da task
+//    "ContaPluv", //nome da task
+//    1000, //tamanho da task
+//    NULL, //parametros task
+//    1, //prioridade da task
+//    &taskPluv, //task handle
+//    1 //core (loop = 1)
+//    );
+//}
+
 void sincronizaTempo(void)
 {
   //Configurando o tempo
@@ -134,6 +165,7 @@ void loop() {
     post["dirvento"] = med.dirvento;
     post["velvento"] = med.velvento;
     post["pressao"] = med.pressao;
+    post["pluv"] = med.pluv;
     xSemaphoreGive(mutex);
 
     //VAMOS TRANSMITIR EM HTTP POST
